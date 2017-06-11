@@ -10,13 +10,11 @@ namespace XCS.Api
 {
     public class Xcs
     {
-        private XcsParamerter _parameters;
         private List<Classifier> Population;
         private IEnvironment Environment;
 
-        public Xcs(XcsParamerter parameters, IEnvironment environment)
+        public Xcs(IEnvironment environment)
         {
-            _parameters = parameters;
             Population = new List<Classifier>();
             Environment = environment;
         }
@@ -33,7 +31,7 @@ namespace XCS.Api
 
         public void InitializeXcs()
         {
-
+            // TODO initialize XcsParameter
         }
 
         public async Task RunExperiment(double reward)
@@ -56,7 +54,7 @@ namespace XCS.Api
 
         private XcsAction SelectAction(Dictionary<XcsAction, double> predictionArray)
         {
-            if (new Random().NextDouble() < _parameters.Explorationrate)
+            if (new Random().NextDouble() < XcsParamerter.Explorationrate)
             {
                 return GetRandomXcsAction();
             }
@@ -93,7 +91,7 @@ namespace XCS.Api
             // Adding some generalization with wildcards
             for (int i = 0; i < condition.Length; i++)
             {
-                if (new Random().NextDouble() < _parameters.WildcardProbability)
+                if (new Random().NextDouble() < XcsParamerter.WildcardProbability)
                 {
                     cl.Condition[i] = '#';
                 }
@@ -102,11 +100,11 @@ namespace XCS.Api
             // Get random action not present in matchset [M]
             cl.Action = GetMissingActionsFrom(matchset)[new Random().Next(matchset.Count)];
 
-            cl.Prediction = _parameters.Initial_p;
-            cl.Epsilon = _parameters.Initial_epsilon;
-            cl.Fitness = _parameters.Initial_F;
+            cl.Prediction = XcsParamerter.Initial_p;
+            cl.Epsilon = XcsParamerter.Initial_epsilon;
+            cl.Fitness = XcsParamerter.Initial_F;
             cl.Experience = 0;
-            cl.Ts = DateTime.Now;
+            cl.Ts = DateTime.Now.Ticks;
             cl.As = 1;
             cl.Numerosity = 1;
 
@@ -164,7 +162,7 @@ namespace XCS.Api
 
                 classifier.Experience ++;
                 // Update prediction (p)
-                if (classifier.Experience < 1 / _parameters.Beta)
+                if (classifier.Experience < 1 / XcsParamerter.Beta)
                 {
                     // Update prediction (p)
                     classifier.Prediction += (reward - classifier.Prediction) / classifier.Experience;
@@ -176,16 +174,16 @@ namespace XCS.Api
                 else
                 {
                     // Update prediction (p)
-                    classifier.Prediction += _parameters.Beta * (reward - classifier.Prediction);
+                    classifier.Prediction += XcsParamerter.Beta * (reward - classifier.Prediction);
                     // Update prediction error (epsilon)
-                    classifier.Epsilon += _parameters.Beta * (Math.Abs(reward - classifier.Prediction) - classifier.Epsilon);
+                    classifier.Epsilon += XcsParamerter.Beta * (Math.Abs(reward - classifier.Prediction) - classifier.Epsilon);
                     // Update action set size estimate classifier.as
-                    classifier.As += (int)(_parameters.Beta * sum);
+                    classifier.As += (int)(XcsParamerter.Beta * sum);
                 }
             }
             UpdateFitness(actionset);
 
-            if (_parameters.DoActionsetSubsumption)
+            if (XcsParamerter.DoActionsetSubsumption)
             {
                 throw new NotImplementedException();
             }
@@ -204,14 +202,14 @@ namespace XCS.Api
             // Fill accuracy vector and build accuracy sum
             for (int i = 0; i < accuracyVector.Length; i++)
             {
-                if (actionset[i].Epsilon < _parameters.EpsilonZero)
+                if (actionset[i].Epsilon < XcsParamerter.EpsilonZero)
                 {
                     accuracyVector[i] = 1;
                 }
                 else
                 {
-                    accuracyVector[i] = _parameters.Alpha *
-                                        Math.Pow((actionset[i].Epsilon / _parameters.EpsilonZero), -_parameters.V);
+                    accuracyVector[i] = XcsParamerter.Alpha *
+                                        Math.Pow((actionset[i].Epsilon / XcsParamerter.EpsilonZero), -XcsParamerter.V);
                 }
 
                 // Increase accuracy sum
@@ -221,7 +219,7 @@ namespace XCS.Api
             // Update Fitness of each classifier in the actionset
             for (int i = 0; i < accuracyVector.Length; i++)
             {
-                actionset[i].Fitness += _parameters.Beta * (accuracyVector[i] * actionset[i].Numerosity / accuracySum - actionset[i].Fitness);
+                actionset[i].Fitness += XcsParamerter.Beta * (accuracyVector[i] * actionset[i].Numerosity / accuracySum - actionset[i].Fitness);
             }
         }
 
@@ -255,8 +253,6 @@ namespace XCS.Api
             return GetAllXcsActions()[new Random().Next(GetAllXcsActions().Count)];
         }
         
-
-
         #endregion
     }
 }

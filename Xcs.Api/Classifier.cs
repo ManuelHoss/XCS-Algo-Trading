@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 
 namespace XCS.Api
 {
@@ -17,13 +18,18 @@ namespace XCS.Api
         public double Fitness { get; set; }
         public int Experience { get; set; }
         /// <summary>
-        /// Actual time
+        /// Indicator how many rounds the Classifier "survived"
         /// </summary>
-        public DateTime Ts { get; set; }
+        public long Ts { get; set; }
         /// <summary>
         /// Actionset size estimate
         /// </summary>
         public int As { get; set; }
         public int Numerosity { get; set; }
+        
+        public Classifier Clone(Classifier classifier)
+        {
+            return (Classifier) this.MemberwiseClone();
+        }
     }
 }
