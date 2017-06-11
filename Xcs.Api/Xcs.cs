@@ -36,7 +36,7 @@ namespace XCS.Api
 
         }
 
-        public async Task RunExperiment()
+        public async Task RunExperiment(double reward)
         {
             char[] condition = await Environment.GetSituationAsync();
             List<Classifier> matchset = GenerateMatchset(condition);
@@ -45,13 +45,10 @@ namespace XCS.Api
             List<Classifier> actionset = GenerateActionSet(matchset, action);
             await Environment.ExecuteActionAsync(action);
             UpdateClassifierParameter();
+            // TODO: Expand, because this is Single Step only!!
+            UpdateSet(actionset, reward);
         }
-
-        private void UpdateClassifierParameter()
-        {
-            throw new NotImplementedException();
-        }
-
+        
         private List<Classifier> GenerateActionSet(List<Classifier> matchset, XcsAction action)
         {
             return matchset.Where(classifier => classifier.Action == action).ToList();
@@ -65,6 +62,7 @@ namespace XCS.Api
             }
             else
             {
+                // TODO: Use Roulette Wheel Selection?!
                 return predictionArray.FirstOrDefault(action => action.Value.Equals(predictionArray.Values.Max())).Key;
             }
         }
@@ -153,7 +151,8 @@ namespace XCS.Api
         }
 
         // --------------- Update Methods ---------------
-        private void UpdateSet(List<Classifier> actionset, double P, List<Classifier> population)
+        // TODO: Expand, because this is Single Step only!!
+        private void UpdateSet(List<Classifier> actionset, double reward)
         {
             foreach (Classifier classifier in actionset)
             {
@@ -168,18 +167,18 @@ namespace XCS.Api
                 if (classifier.Experience < 1 / _parameters.Beta)
                 {
                     // Update prediction (p)
-                    classifier.Prediction += (P - classifier.Prediction) / classifier.Experience;
+                    classifier.Prediction += (reward - classifier.Prediction) / classifier.Experience;
                     // Update prediction error (epsilon)
-                    classifier.Epsilon += (Math.Abs(P - classifier.Prediction) - classifier.Epsilon) / classifier.Experience;
+                    classifier.Epsilon += (Math.Abs(reward - classifier.Prediction) - classifier.Epsilon) / classifier.Experience;
                     // Update action set size estimate classifier.as
                     classifier.As += (int)sum / classifier.Experience;
                 }
                 else
                 {
                     // Update prediction (p)
-                    classifier.Prediction += _parameters.Beta * (P - classifier.Prediction);
+                    classifier.Prediction += _parameters.Beta * (reward - classifier.Prediction);
                     // Update prediction error (epsilon)
-                    classifier.Epsilon += _parameters.Beta * (Math.Abs(P - classifier.Prediction) - classifier.Epsilon);
+                    classifier.Epsilon += _parameters.Beta * (Math.Abs(reward - classifier.Prediction) - classifier.Epsilon);
                     // Update action set size estimate classifier.as
                     classifier.As += (int)(_parameters.Beta * sum);
                 }
@@ -192,11 +191,38 @@ namespace XCS.Api
             }
         }
 
+        private void UpdateClassifierParameter()
+        {
+            throw new NotImplementedException();
+        }
+
         private void UpdateFitness(List<Classifier> actionset)
         {
             double accuracySum = 0;
             double[] accuracyVector = new double[actionset.Count];
 
+            // Fill accuracy vector and build accuracy sum
+            for (int i = 0; i < accuracyVector.Length; i++)
+            {
+                if (actionset[i].Epsilon < _parameters.EpsilonZero)
+                {
+                    accuracyVector[i] = 1;
+                }
+                else
+                {
+                    accuracyVector[i] = _parameters.Alpha *
+                                        Math.Pow((actionset[i].Epsilon / _parameters.EpsilonZero), -_parameters.V);
+                }
+
+                // Increase accuracy sum
+                accuracySum += accuracyVector[i] * actionset[i].Numerosity;
+            }
+
+            // Update Fitness of each classifier in the actionset
+            for (int i = 0; i < accuracyVector.Length; i++)
+            {
+                actionset[i].Fitness += _parameters.Beta * (accuracyVector[i] * actionset[i].Numerosity / accuracySum - actionset[i].Fitness);
+            }
         }
 
         #region Helper methods

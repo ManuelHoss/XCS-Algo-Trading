@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using MtApi;
 using Xcs.Api;
 using XCS.Api;
 
@@ -8,7 +7,7 @@ namespace TradingAi.Api.Xcs
 {
     public class Metatrader4Env : IEnvironment
     {
-        private readonly MtApiClient ApiClient = new MtApiClient();
+        // private readonly MtApiClient ApiClient = new MtApiClient();
 
 
         public Task<char[]> GetSituationAsync()
