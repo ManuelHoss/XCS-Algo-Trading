@@ -46,7 +46,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MtApi">
-      <HintPath>..\..\..\..\Program Files (x86)\MtApi\MtApi.dll</HintPath>
+      <HintPath>C:\Program Files (x86)\MtApi\MtApi.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>C:\Program Files (x86)\MtApi\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Xcs.Api">
       <HintPath>..\Xcs.Api\obj\Debug\Xcs.Api.dll</HintPath>
