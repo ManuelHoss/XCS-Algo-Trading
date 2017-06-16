@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using MtApi;
 using Xcs.Api;
 
 namespace XCS.Api
@@ -36,7 +37,10 @@ namespace XCS.Api
 
         public async Task RunExperiment(double reward)
         {
-            char[] condition = await Environment.GetSituationAsync();
+            // TODO: Enter parameter
+            char[] condition = await Environment.GetSituationAsync(null, ChartPeriod.ZERO, 0, 0, 0, 0);
+            throw new NotImplementedException();
+
             List<Classifier> matchset = GenerateMatchset(condition);
             Dictionary<XcsAction, double> predictionArray = GeneratePredictionArray(matchset);
             XcsAction action = SelectAction(predictionArray);

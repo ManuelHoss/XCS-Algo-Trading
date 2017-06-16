@@ -51,6 +51,10 @@
     <Compile Include="XcsAction.cs" />
     <Compile Include="XcsParamerter.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Reference Include="MtApi">
+      <HintPath>..\..\..\Program Files (x86)\MtApi\MtApi.dll</HintPath>
+    </Reference>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
 </Project>

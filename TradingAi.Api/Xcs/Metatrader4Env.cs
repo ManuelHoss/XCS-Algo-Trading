@@ -12,29 +12,36 @@ namespace TradingAi.Api.Xcs
         private readonly MtApiClient _apiClient = new MtApiClient();
         private readonly char[] _situation = new char[8];
 
-        public async Task<char[]> GetSituationAsync(string symbol, ChartPeriod timeframe, int period, int appliedPrice, int shift)
+        public async Task<char[]> GetSituationAsync(string symbol, ChartPeriod timeframe, int maShift, int period, int appliedPrice, int shift)
         {
             // Moving Average (MA)
-            _situation[0] = await GetMovingAverage(symbol, ChartPeriod.PERIOD_M15, appliedPrice, shift);
+            _situation[0] = await GetMovingAverage(symbol, maShift, ChartPeriod.PERIOD_M15, shift);
 
             // Commodity Channel Index (CCI)
             _situation[1] = await GetCommodityChannelIndex(symbol, timeframe, period, appliedPrice, shift);
-            
+
             // Chaikin Money Flow (CMF)
+            _situation[2] = '#';
 
             // Moving average convergence divergence (MACD)
+            _situation[3] = await GetMovingAverageConvergenceDivergence(null, ChartPeriod.ZERO, 0, 0, 0, 0, 0, 0);
 
             // Percentage Price Oscillator (PPO)
+            _situation[4] = '#';
 
             // Relative Strength Index (RSI)
+            _situation[5] = await GetRelativeStrengthIndex(null, ChartPeriod.ZERO, 0, 0, 0);
 
             // Rate of Change (ROC)
+            _situation[6] = '#';
 
             // Williams Percent R (WPR)
+            _situation[7] = await GetWilliamsPercentR(null, ChartPeriod.ZERO, 0, 0);
+
             throw  new NotImplementedException();
         }
 
-        public Task<char[]> GetSituationAsync()
+        public Task ExecuteActionAsync(XcsAction action)
         {
             throw new NotImplementedException();
         }
@@ -59,10 +66,10 @@ namespace TradingAi.Api.Xcs
             // Closed price = 0
             // Shift ... ?!
 
-            var ema_50_Val = await Execute(() => _apiClient.iMA(symbol, (int)timeframe, 50, 1, 1, 0, 1));
-            var ema_5_Val = await Execute(() => _apiClient.iMA(symbol, (int)timeframe, 5, 1, 1, 0, 1));
+            var ema50Val = await Execute(() => _apiClient.iMA(symbol, (int)timeframe, 50, maShift, 1, 0, shift));
+            var ema5Val = await Execute(() => _apiClient.iMA(symbol, (int)timeframe, 5, maShift, 1, 0, shift));
 
-            if (ema_50_Val <= ema_5_Val)
+            if (ema50Val <= ema5Val)
             {
                 return '0';
             }
@@ -70,6 +77,9 @@ namespace TradingAi.Api.Xcs
             {
                 return '1';
             }
+
+            // TODO: Check parameters
+            throw new NotImplementedException();
         }
 
         private async Task<char> GetCommodityChannelIndex(string symbol, ChartPeriod timeframe, int period, int appliedPrice, int shift)
@@ -98,19 +108,72 @@ namespace TradingAi.Api.Xcs
             //    return '0';
             //}
         }
-
-        private async Task<char> GetChaikinMoneyFlow()
+        
+        private async Task<char> GetMovingAverageConvergenceDivergence(string symbol, ChartPeriod timeframe, int fastEmaPeriod, int slowEmaPeriod, int signalPeriod, int appliedPrice, int mode, int shift)
         {
-            var cmaVal = await Execute(() => _apiClient.(symbol, (int)timeframe, 50, maShift, 1, appliedPrice, shift));
+            var macd = await Execute(() => _apiClient.iMACD(symbol, (int) timeframe, fastEmaPeriod, slowEmaPeriod, signalPeriod, appliedPrice, mode, shift));
+
+            if (macd > 0)
+            {
+                return '1';
+            }
+            else
+            {
+                return '0';
+            }
         }
 
+        private async Task<char> GetRelativeStrengthIndex(string symbol, ChartPeriod timeframe, int period, int appliedPrice, int shift)
+        {
+            var rsi = await Execute(() => _apiClient.iRSI(symbol, (int)timeframe, period, appliedPrice, shift));
+
+            // Overbought
+            if (rsi >= 80)
+            {
+                return '0';
+            }
+            // Oversold
+            else if (rsi <= 20)
+            {
+                return '1';
+            }
+            else
+            {
+                return '#';
+            }
+        }
+
+        private async Task<char> GetWilliamsPercentR(string symbol, ChartPeriod timeframe, int period, int shift)
+        {
+            var wpr = await Execute(() => _apiClient.iWPR(symbol, (int)timeframe, period, shift));
+            char result = '#';
+            // Overbought
+            if (wpr >= -20)
+            {
+                result = '0';
+            }
+            // Oversold
+            else if (wpr <= -80)
+            {
+                result = '1';
+            }
+            else
+            {
+                result = '#';
+            }
+
+            
+
+            return result;
+        }
+        
         #endregion Get situation values
 
 
 
         #region Execute methods
 
-        private Task Execute(Action action)
+            private Task Execute(Action action)
         {
             return Task.Factory.StartNew(() =>
             {
@@ -150,7 +213,7 @@ namespace TradingAi.Api.Xcs
                 return result;
             });
         }
-
+        
         #endregion Execute methods
     }
 }
